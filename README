@@ -1,0 +1,47 @@
+NAME
+    "Method::Utils" - functional-style utilities for method calls
+
+FUNCTIONS
+    All of the following functions are intended to be used as method call
+    modifiers. That is, they return a "SCALAR" reference to a "CODE"
+    reference which allows them to be used in the following syntax
+
+     $ball->${possibly "bounce"}( "10 metres" );
+
+    Since the returned double-reference can be dereferenced by "${ }" to
+    obtain the "CODE" reference directly, it can be used to create new
+    methods. For example:
+
+     *bounce_if_you_can = ${possibly "bounce"};
+
+    The following utilities are described from the perspective of directly
+    invoking the returned code, as in the first example.
+
+  possibly $method
+    Invokes the named method on the object or class and return what it
+    returned, if it exists. If the method does not exist, returns "undef" in
+    scalar context or the empty list in list context.
+
+  inwardly $method
+  outwardly $method
+    Invokes the named method on the object or class for *every* class that
+    provides such a method in the @ISA heirarchy, not just the first one
+    that is found. "inwardly" starts its search at the topmost class; that
+    is, the class name (or type of the object) provided, and starts
+    searching down towards superclasses. "outwardly" starts its search at
+    the base-most superclass, searching upward before finally ending at the
+    topmost class.
+
+    In the case of multiple inheritance, subclasses are always searched in
+    the order that they appear in the @ISA array.
+
+    In the case that multiple inheritance brings the same subclass in more
+    than once, they are arranged into a consistent order. That is,
+    "inwardly" ensures that no superclass will be searched until every
+    subclass that uses it has been searched first; while "outwardly" ensures
+    that no superclass will be searched before every subclass that it uses
+    has been searched already.
+
+AUTHOR
+    Paul Evans <leonerd@leonerd.org.uk>
+

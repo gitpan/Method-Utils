@@ -1,0 +1,12 @@
+Build.PL
+Changes
+lib/Method/Utils.pm
+MANIFEST			This list of files
+t/00use.t
+t/01possibly.t
+t/02inwardly-outwardly.t
+t/99pod.t
+Makefile.PL
+README
+LICENSE
+META.yml
