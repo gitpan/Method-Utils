@@ -1,27 +1,47 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2011 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2011-2014 -- leonerd@leonerd.org.uk
 
 package Method::Utils;
 
 use strict;
 use warnings;
 
-our $VERSION = '0.01_001';
+our $VERSION = '0.02';
 
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
+   maybe
    possibly
 
    inwardly
    outwardly
 );
 
+require mro;
+
 =head1 NAME
 
 C<Method::Utils> - functional-style utilities for method calls
+
+=cut
+
+=head1 SYNOPSIS
+
+ use Method::Utils qw( maybe possibly inwardly );
+
+ $obj->${maybe "do_thing"}(@args);
+ # equivalent to
+ #   $obj->do_thing(@args) if defined $obj;
+
+ $obj->${possibly "do_another"}(@args);
+ # equivalent to
+ #   $obj->do_another(@args) if $obj->can( "do_another" );
+
+ $obj->${inwardly "do_all_these"}();
+ # invokes the method on every subclass in 'mro' order
 
 =cut
 
@@ -39,10 +59,37 @@ example:
 
  *bounce_if_you_can = ${possibly "bounce"};
 
-The following utilities are described from the perspective of directly
-invoking the returned code, as in the first example.
+This is especially useful for creating methods in base classes which
+distribute across all the classes in a class heirarchy; for example
+
+ *DESTROY = ${inwardly "COLLAPSE"};
 
 =cut
+
+=head2 maybe $method
+
+Invokes the named method on the object or class, if one is provided, and
+return what it returned. If invoked on C<undef>, returns C<undef> in scalar
+context or the empty list in list context.
+
+C<$method> here may also be a double-ref to a C<CODE>, such as returned by
+the remaining utility functions given below. In this case, it will be
+dereferenced automatically, allowing you to conveniently perform
+
+  $obj->${maybe possibly 'method'}( @args )
+
+=cut
+
+sub maybe
+{
+   my $mth = shift;
+   $mth = $$mth if ref $mth eq "REF" and ref $$mth eq "CODE";
+   \sub {
+      my $self = shift;
+      defined $self or return;
+      $self->$mth( @_ );
+   };
+}
 
 =head2 possibly $method
 
@@ -68,19 +115,10 @@ sub possibly
 
 Invokes the named method on the object or class for I<every> class that
 provides such a method in the C<@ISA> heirarchy, not just the first one that
-is found. C<inwardly> starts its search at the topmost class; that is, the
-class name (or type of the object) provided, and starts searching down towards
-superclasses. C<outwardly> starts its search at the base-most superclass,
-searching upward before finally ending at the topmost class.
-
-In the case of multiple inheritance, subclasses are always searched in the
-order that they appear in the C<@ISA> array.
-
-In the case that multiple inheritance brings the same subclass in more than
-once, they are arranged into a consistent order. That is, C<inwardly> ensures
-that no superclass will be searched until every subclass that uses it has been
-searched first; while C<outwardly> ensures that no superclass will be searched
-before every subclass that it uses has been searched already.
+is found. C<inwardly> searches all the classes in L<mro> order, finding the
+class itself first and then its superclasses. C<outwardly> runs in reverse,
+starting its search at the base-most superclass, searching upward before
+finally ending at the class itself.
 
 =cut
 
@@ -89,27 +127,8 @@ sub inwardly
    my $mth = shift;
    \sub {
       my $self = shift;
-
-      my @packages;
-      my @queue = ref $self || $self;
-      my %seen;
-      while( @queue ) {
-         my $class = shift @queue;
-         push @packages, $class;
-         if( defined $seen{$class} ) {
-            undef $packages[$seen{$class}];
-            $seen{$class} = $#packages;
-            next;
-         }
-         else {
-            $seen{$class} = $#packages;
-            unshift @queue, do { no strict 'refs'; @{$class."::ISA"} };
-         }
-      }
-
-      for my $class ( @packages ) {
+      foreach my $class ( @{ mro::get_linear_isa( ref $self || $self ) } ) {
          no strict 'refs';
-         defined $class or next;
          defined &{$class."::$mth"} or next;
          &{$class."::$mth"}( $self, @_ );
       }
@@ -121,32 +140,44 @@ sub outwardly
    my $mth = shift;
    \sub {
       my $self = shift;
-
-      my @packages;
-      my @queue = ref $self || $self;
-      my %seen;
-      while( @queue ) {
-         my $class = shift @queue;
-         push @packages, $class;
-         if( defined $seen{$class} ) {
-            undef $packages[$seen{$class}];
-            $seen{$class} = $#packages;
-            next;
-         }
-         else {
-            $seen{$class} = $#packages;
-            unshift @queue, reverse do { no strict 'refs'; @{$class."::ISA"} };
-         }
-      }
-
-      for my $class ( reverse @packages ) {
+      foreach my $class ( reverse @{ mro::get_linear_isa( ref $self || $self ) } ) {
          no strict 'refs';
-         defined $class or next;
          defined &{$class."::$mth"} or next;
          &{$class."::$mth"}( $self, @_ );
       }
    }
 }
+
+=head1 TODO
+
+=over 4
+
+=item *
+
+Consider C<hopefully $method>, which would C<eval{}>-wrap the call, returning
+C<undef>/empty if it failed.
+
+=item *
+
+Consider better ways to combine more of these. E.g. C<hopefully inwardly>
+would C<eval{}>-wrap each subclass call. C<inwardly> without C<possibly> would
+fail if no class provides the method.
+
+=back
+
+=cut
+
+=head1 SEE ALSO
+
+=over 4
+
+=item *
+
+L<http://shadow.cat/blog/matt-s-trout/madness-with-methods/> - Madness With Methods
+
+=back
+
+=cut
 
 =head1 AUTHOR
 

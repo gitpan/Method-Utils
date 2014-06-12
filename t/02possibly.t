@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 10;
+use Test::More;
 
 use Method::Utils qw( possibly );
 
@@ -27,6 +27,8 @@ is_deeply( [ TestClass->${possibly 'somemethod'}(qw( a b c )) ], [qw( a b c )], 
 is_deeply( [ $obj->${possibly 'nomethod'}(qw( a b c)) ], [], '$obj possibly list missing' );
 
 is_deeply( [ TestClass->${possibly 'nomethod'}(qw( a b c )) ], [], 'Class possibly list missing' );
+
+done_testing;
 
 package TestClass;
 
