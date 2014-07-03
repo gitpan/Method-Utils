@@ -14,9 +14,10 @@ name: Method-Utils
 provides:
   Method::Utils:
     file: lib/Method/Utils.pm
-    version: '0.02'
+    version: '0.03'
 requires:
   Exporter: '5.57'
+  mro: '0'
 resources:
   license: http://dev.perl.org/licenses/
-version: '0.02'
+version: '0.03'

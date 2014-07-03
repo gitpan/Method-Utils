@@ -7,6 +7,7 @@ my $build = Module::Build->new(
    module_name => 'Method::Utils',
    requires => {
       'Exporter' => '5.57',
+      'mro'      => 0,
    },
    build_requires => {
       'Test::More' => '0.88', # done_testing

@@ -1,5 +1,9 @@
 Revision history for Method::Utils
 
+0.03    2014/07/03 23:43:46
+        [BUGFIXES]
+         * Declare explicit dependency on mro (RT96905)
+
 0.02    2014/06/12 14:20:17
         [CHANGES]
          * Use 'mro' to provide inward/outward method resolution

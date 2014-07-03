@@ -6,7 +6,8 @@ WriteMakefile
   'VERSION_FROM' => 'lib/Method/Utils.pm',
   'PREREQ_PM' => {
                    'Exporter' => '5.57',
-                   'Test::More' => '0.88'
+                   'Test::More' => '0.88',
+                   'mro' => 0
                  },
   'INSTALLDIRS' => 'site',
   'EXE_FILES' => [],
